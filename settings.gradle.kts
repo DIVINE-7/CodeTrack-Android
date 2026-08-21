@@ -24,4 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "CodeTrack"
 include(":app")
+<<<<<<< HEAD
  
+=======
+>>>>>>> f6d686e (feat: initialize Android project)
