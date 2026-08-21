@@ -6,13 +6,9 @@ plugins {
 android {
     namespace = "com.example.codetrack"
     compileSdk {
-<<<<<<< HEAD
         version = release(37) {
             minorApiLevel = 1
         }
-=======
-        version = release(37)
->>>>>>> f6d686e (feat: initialize Android project)
     }
 
     defaultConfig {
