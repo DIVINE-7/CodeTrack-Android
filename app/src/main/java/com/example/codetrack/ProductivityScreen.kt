@@ -40,6 +40,10 @@ fun ProductivityScreen(
     val completedTasks by viewModel.completedTasks.collectAsState()
     val progressPercent by viewModel.progressPercent.collectAsState()
     
+    val currentStreak by viewModel.currentStreak.collectAsState()
+    val problemsSolvedThisWeek by viewModel.problemsSolvedThisWeek.collectAsState()
+    val activeDaysThisWeek by viewModel.activeDaysThisWeek.collectAsState()
+    
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
         label = "progressAnimation"
@@ -75,9 +79,9 @@ fun ProductivityScreen(
             // 3. CURRENT STREAK CARD
             item {
                 StreakCard(
-                    streak = 7,
-                    problemsSolved = 45,
-                    daysActive = 5
+                    streak = currentStreak,
+                    problemsSolved = problemsSolvedThisWeek,
+                    daysActive = activeDaysThisWeek
                 )
             }
             
