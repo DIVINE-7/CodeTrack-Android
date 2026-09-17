@@ -37,15 +37,20 @@ fun ProductivityScreen(
     
     // Collect states from ViewModel
     val goalsState by viewModel.goals.collectAsState()
-    val completedTasks by viewModel.completedTasks.collectAsState()
-    val progressPercent by viewModel.progressPercent.collectAsState()
     
     val currentStreak by viewModel.currentStreak.collectAsState()
     val problemsSolvedThisWeek by viewModel.problemsSolvedThisWeek.collectAsState()
     val activeDaysThisWeek by viewModel.activeDaysThisWeek.collectAsState()
+
+    val dailyProgress by viewModel.dailyProgress.collectAsState()
+
+    // Calculate overall daily progress from categories
+    val categoryCompleted = dailyProgress.dsaCompleted + dailyProgress.aptitudeCompleted + dailyProgress.interviewCompleted
+    val categoryTarget = dailyProgress.dsaTarget + dailyProgress.aptitudeTarget + dailyProgress.interviewTarget
+    val overallProgress = if (categoryTarget > 0) categoryCompleted.toFloat() / categoryTarget else 0f
     
     val animatedProgress by animateFloatAsState(
-        targetValue = progressPercent,
+        targetValue = overallProgress,
         label = "progressAnimation"
     )
 
@@ -68,11 +73,11 @@ fun ProductivityScreen(
             // 2. TODAY'S PROGRESS CARD
             item {
                 TodayProgressCard(
-                    completedCount = completedTasks,
+                    completedCount = categoryCompleted,
                     progress = animatedProgress,
-                    dsaProgress = "2 / 5",
-                    aptitudeProgress = "5 / 10",
-                    interviewProgress = "1 / 3"
+                    dsaProgress = "${dailyProgress.dsaCompleted} / ${dailyProgress.dsaTarget}",
+                    aptitudeProgress = "${dailyProgress.aptitudeCompleted} / ${dailyProgress.aptitudeTarget}",
+                    interviewProgress = "${dailyProgress.interviewCompleted} / ${dailyProgress.interviewTarget}"
                 )
             }
             

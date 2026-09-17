@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codetrack.data.model.Goal
 import com.example.codetrack.data.model.ActivityRecord
+import com.example.codetrack.data.model.DailyProgress
 import com.example.codetrack.data.repository.GoalRepository
 import com.example.codetrack.data.repository.StreakRepository
+import com.example.codetrack.data.repository.ProgressRepository
 import kotlinx.coroutines.flow.*
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -13,7 +15,8 @@ import java.time.temporal.ChronoUnit
 
 class ProductivityViewModel(
     private val goalRepository: GoalRepository = GoalRepository.getInstance(),
-    private val streakRepository: StreakRepository = StreakRepository.getInstance()
+    private val streakRepository: StreakRepository = StreakRepository.getInstance(),
+    private val progressRepository: ProgressRepository = ProgressRepository.getInstance()
 ) : ViewModel() {
     
     // Daily Goals State
@@ -64,12 +67,38 @@ class ProductivityViewModel(
             initialValue = 0
         )
 
+    // Daily Progress State
+    val dailyProgress: StateFlow<DailyProgress> = progressRepository.dailyProgress
+
     fun toggleGoal(goalId: Int) {
-        goalRepository.toggleGoal(goalId)
+        val goal = goals.value.find { it.id == goalId }
+        if (goal != null) {
+            val newCheckedState = !goal.isChecked
+            goalRepository.toggleGoal(goalId)
+            
+            // Sync with DailyProgress for specific goals
+            when (goalId) {
+                1 -> progressRepository.setDsaGoalCompleted(newCheckedState)
+                2 -> progressRepository.setAptitudeGoalCompleted(newCheckedState)
+                3 -> progressRepository.setInterviewGoalCompleted(newCheckedState)
+            }
+        }
     }
 
     fun recordProblemSolved(count: Int = 1) {
         streakRepository.recordActivity(LocalDate.now(), count)
+    }
+
+    fun recordDsaProgress(count: Int = 1) {
+        progressRepository.recordDsaProgress(count)
+    }
+
+    fun recordAptitudeProgress(count: Int = 1) {
+        progressRepository.recordAptitudeProgress(count)
+    }
+
+    fun recordInterviewProgress(count: Int = 1) {
+        progressRepository.recordInterviewProgress(count)
     }
 
     private fun calculateStreak(records: List<ActivityRecord>): Int {
