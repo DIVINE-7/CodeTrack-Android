@@ -26,29 +26,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class Goal(val id: Int, val title: String, val isChecked: Boolean = false)
+import com.example.codetrack.data.model.Goal
 
 @Composable
-fun ProductivityScreen(onNavigateToDsa: () -> Unit = {}) {
+fun ProductivityScreen(
+    onNavigateToDsa: () -> Unit = {},
+    viewModel: ProductivityViewModel = remember { ProductivityViewModel() }
+) {
     val context = LocalContext.current
     
-    // State for daily goals
-    var goalsState by remember {
-        mutableStateOf(
-            listOf(
-                Goal(1, "Solve 5 DSA problems"),
-                Goal(2, "Practice 10 aptitude questions"),
-                Goal(3, "Revise 3 interview questions"),
-                Goal(4, "Watch 1 recommended learning video"),
-                Goal(5, "Participate in a coding contest")
-            )
-        )
-    }
-
-    // Derived states
-    val completedTasks = goalsState.count { it.isChecked }
-    val totalTasks = goalsState.size
-    val progressPercent = if (totalTasks > 0) completedTasks.toFloat() / totalTasks else 0f
+    // Collect states from ViewModel
+    val goalsState by viewModel.goals.collectAsState()
+    val completedTasks by viewModel.completedTasks.collectAsState()
+    val progressPercent by viewModel.progressPercent.collectAsState()
     
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
@@ -96,9 +86,7 @@ fun ProductivityScreen(onNavigateToDsa: () -> Unit = {}) {
                 DailyGoalsSection(
                     goals = goalsState,
                     onGoalToggle = { goalId ->
-                        goalsState = goalsState.map {
-                            if (it.id == goalId) it.copy(isChecked = !it.isChecked) else it
-                        }
+                        viewModel.toggleGoal(goalId)
                     }
                 )
             }
