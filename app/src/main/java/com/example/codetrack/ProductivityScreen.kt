@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.sp
 data class Goal(val id: Int, val title: String, val isChecked: Boolean = false)
 
 @Composable
-fun ProductivityScreen() {
+fun ProductivityScreen(onNavigateToDsa: () -> Unit = {}) {
     val context = LocalContext.current
     
     // State for daily goals
@@ -106,7 +106,11 @@ fun ProductivityScreen() {
             // 5. QUICK PRACTICE SECTION
             item {
                 QuickPracticeSection { practiceType ->
-                    Toast.makeText(context, "Starting $practiceType Practice...", Toast.LENGTH_SHORT).show()
+                    if (practiceType == "DSA") {
+                        onNavigateToDsa()
+                    } else {
+                        Toast.makeText(context, "Starting $practiceType Practice...", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             
