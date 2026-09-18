@@ -6,10 +6,8 @@ import com.example.codetrack.data.model.Goal
 import com.example.codetrack.data.model.ActivityRecord
 import com.example.codetrack.data.model.DailyProgress
 import com.example.codetrack.data.model.WeeklyStatistics
-import com.example.codetrack.data.repository.GoalRepository
-import com.example.codetrack.data.repository.StreakRepository
-import com.example.codetrack.data.repository.ProgressRepository
-import com.example.codetrack.data.repository.StatisticsRepository
+import com.example.codetrack.data.model.RevisionItem
+import com.example.codetrack.data.repository.*
 import kotlinx.coroutines.flow.*
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -19,7 +17,8 @@ class ProductivityViewModel(
     private val goalRepository: GoalRepository = GoalRepository.getInstance(),
     private val streakRepository: StreakRepository = StreakRepository.getInstance(),
     private val progressRepository: ProgressRepository = ProgressRepository.getInstance(),
-    private val statisticsRepository: StatisticsRepository = StatisticsRepository.getInstance()
+    private val statisticsRepository: StatisticsRepository = StatisticsRepository.getInstance(),
+    private val revisionRepository: RevisionRepository = RevisionRepository.getInstance()
 ) : ViewModel() {
     
     // Daily Goals State
@@ -76,6 +75,24 @@ class ProductivityViewModel(
     // Weekly Statistics State
     val weeklyStatistics: StateFlow<WeeklyStatistics> = statisticsRepository.weeklyStats
 
+    // Revision State
+    val revisions: StateFlow<List<RevisionItem>> = revisionRepository.revisions
+
+    val completedRevisionsCount: StateFlow<Int> = revisions
+        .map { it.count { item -> item.isCompleted } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val pendingRevisionsCount: StateFlow<Int> = revisions
+        .map { it.count { item -> !item.isCompleted } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val dueTodayRevisionsCount: StateFlow<Int> = revisions
+        .map { list ->
+            val today = LocalDate.now()
+            list.count { item -> !item.isCompleted && item.scheduledDate.isEqual(today) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     fun toggleGoal(goalId: Int) {
         val goal = goals.value.find { it.id == goalId }
         if (goal != null) {
@@ -114,6 +131,26 @@ class ProductivityViewModel(
 
     fun recordInterviewProgress(count: Int = 1) {
         progressRepository.recordInterviewProgress(count)
+    }
+
+    fun markRevisionCompleted(id: Int, isCompleted: Boolean) {
+        revisionRepository.markCompleted(id, isCompleted)
+    }
+
+    fun addRevision(problemId: Int, title: String, category: com.example.codetrack.data.model.RevisionCategory, topic: String) {
+        revisionRepository.addRevision(problemId, title, category, topic)
+    }
+
+    fun removeRevision(id: Int) {
+        revisionRepository.removeRevision(id)
+    }
+    
+    fun removeRevisionByProblemId(problemId: Int, category: com.example.codetrack.data.model.RevisionCategory) {
+        revisionRepository.removeRevisionByProblemId(problemId, category)
+    }
+    
+    fun isProblemInRevision(problemId: Int, category: com.example.codetrack.data.model.RevisionCategory): Boolean {
+        return revisionRepository.isProblemInRevision(problemId, category)
     }
 
     private fun calculateStreak(records: List<ActivityRecord>): Int {

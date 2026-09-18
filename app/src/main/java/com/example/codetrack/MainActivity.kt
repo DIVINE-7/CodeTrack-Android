@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import com.example.codetrack.data.repository.DsaQuestionBank
+import com.example.codetrack.data.model.RevisionCategory
 import com.example.codetrack.ui.screens.CodingPracticeScreen
 import com.example.codetrack.ui.screens.ProblemDetailScreen
 import com.example.codetrack.ui.theme.CodeTrackTheme
@@ -26,6 +27,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CodeTrackTheme {
+                val productivityViewModel = remember { ProductivityViewModel() }
+                val revisions by productivityViewModel.revisions.collectAsState()
+
                 var currentScreen by remember { mutableStateOf(Screen.Productivity) }
                 
                 // Question Bank State holding all 1200 problems reactively
@@ -45,7 +49,8 @@ class MainActivity : ComponentActivity() {
                         ProductivityScreen(
                             onNavigateToDsa = {
                                 currentScreen = Screen.DsaPractice
-                            }
+                            },
+                            viewModel = productivityViewModel
                         )
                     }
                     Screen.DsaPractice -> {
@@ -62,6 +67,8 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.ProblemDetail -> {
                         currentProblem?.let { problem ->
+                            val isInRevision = revisions.any { it.problemId == problem.id && it.category == RevisionCategory.DSA }
+                            
                             ProblemDetailScreen(
                                 problem = problem,
                                 onBack = {
@@ -86,7 +93,22 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToCodingPractice = {
                                     currentScreen = Screen.CodingPractice
-                                }
+                                },
+                                onAddToRevision = { dsaProblem ->
+                                    productivityViewModel.addRevision(
+                                        problemId = dsaProblem.id,
+                                        title = dsaProblem.title,
+                                        category = RevisionCategory.DSA,
+                                        topic = dsaProblem.topic
+                                    )
+                                },
+                                onRemoveFromRevision = { dsaProblem ->
+                                    productivityViewModel.removeRevisionByProblemId(
+                                        problemId = dsaProblem.id,
+                                        category = RevisionCategory.DSA
+                                    )
+                                },
+                                isInRevision = isInRevision
                             )
                         } ?: run {
                             currentScreen = Screen.DsaPractice

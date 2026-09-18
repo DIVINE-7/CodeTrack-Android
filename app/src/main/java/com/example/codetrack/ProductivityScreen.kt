@@ -29,6 +29,8 @@ import kotlin.math.roundToInt
 
 import com.example.codetrack.data.model.Goal
 import com.example.codetrack.data.model.WeeklyStatistics
+import com.example.codetrack.data.model.RevisionItem
+import com.example.codetrack.data.model.RevisionCategory
 
 @Composable
 fun ProductivityScreen(
@@ -46,6 +48,9 @@ fun ProductivityScreen(
 
     val dailyProgress by viewModel.dailyProgress.collectAsState()
     val weeklyStats by viewModel.weeklyStatistics.collectAsState()
+    
+    val revisions by viewModel.revisions.collectAsState()
+    val dueTodayCount by viewModel.dueTodayRevisionsCount.collectAsState()
 
     // Calculate overall daily progress from categories
     val categoryCompleted = dailyProgress.dsaCompleted + dailyProgress.aptitudeCompleted + dailyProgress.interviewCompleted
@@ -122,6 +127,17 @@ fun ProductivityScreen(
             // 6.5 WEEKLY STATISTICS SECTION
             item {
                 WeeklyStatisticsSection(stats = weeklyStats)
+            }
+            
+            // 6.7 REVISION TRACKER SECTION
+            item {
+                RevisionTrackerSection(
+                    revisions = revisions,
+                    dueTodayCount = dueTodayCount,
+                    onToggleRevision = { id, completed ->
+                        viewModel.markRevisionCompleted(id, completed)
+                    }
+                )
             }
             
             // 7. MOTIVATIONAL SECTION
@@ -573,6 +589,194 @@ fun ActivityChart(activity: List<Int>) {
                     color = Color.Gray
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun RevisionTrackerSection(
+    revisions: List<RevisionItem>,
+    dueTodayCount: Int,
+    onToggleRevision: (Int, Boolean) -> Unit
+) {
+    var selectedCategory by remember { mutableStateOf<RevisionCategory?>(null) }
+    
+    val filteredRevisions = remember(revisions, selectedCategory) {
+        if (selectedCategory == null) revisions else revisions.filter { it.category == selectedCategory }
+    }
+    
+    val completedCount = revisions.count { it.isCompleted }
+    val totalCount = revisions.size
+    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+
+    Column {
+        Text(
+            text = "Revision Tracker",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Revision Progress",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "$completedCount / $totalCount completed",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color(0xFF4F46E5)
+                        )
+                    }
+                    if (dueTodayCount > 0) {
+                        Surface(
+                            color = Color(0xFFFEE2E2),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "$dueTodayCount Due Today",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFB91C1C),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    color = Color(0xFF4F46E5),
+                    trackColor = Color(0xFFEEF2FF)
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Filters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val categories = listOf(null) + RevisionCategory.entries
+                    categories.forEach { category ->
+                        val isSelected = selectedCategory == category
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category?.displayName ?: "All") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF4F46E5),
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                if (filteredRevisions.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "No revisions found.", color = Color.Gray)
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        filteredRevisions.forEach { item ->
+                            RevisionItemRow(item, onToggleRevision)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RevisionItemRow(item: RevisionItem, onToggleRevision: (Int, Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF9FAFB), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (item.isCompleted) Color.Gray else Color(0xFF111827),
+                textDecoration = if (item.isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = Color(0xFFE5E7EB),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = item.category.displayName,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF4B5563)
+                    )
+                }
+                if (item.topic.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = Color(0xFFF3F4F6),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = item.topic,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (item.isCompleted) "Revised" else "Pending",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.isCompleted) Color(0xFF10B981) else Color(0xFFF59E0B)
+                )
+            }
+        }
+        
+        Button(
+            onClick = { onToggleRevision(item.id, !item.isCompleted) },
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (item.isCompleted) Color(0xFFF3F4F6) else Color(0xFF4F46E5),
+                contentColor = if (item.isCompleted) Color(0xFF4B5563) else Color.White
+            ),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                text = if (item.isCompleted) "Revised" else "Mark Revised",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

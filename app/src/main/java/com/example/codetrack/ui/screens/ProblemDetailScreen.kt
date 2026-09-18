@@ -26,7 +26,10 @@ fun ProblemDetailScreen(
     onToggleSolved: (Int) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onNavigateToCodingPractice: (DsaProblem) -> Unit = {}
+    onNavigateToCodingPractice: (DsaProblem) -> Unit = {},
+    onAddToRevision: (DsaProblem) -> Unit = {},
+    onRemoveFromRevision: (DsaProblem) -> Unit = {},
+    isInRevision: Boolean = false
 ) {
     val difficultyColor = when (problem.difficulty) {
         "Easy" -> Color(0xFF10B981)
@@ -165,6 +168,32 @@ fun ProblemDetailScreen(
             // Hint Card
             if (problem.hint.isNotEmpty()) {
                 DetailSectionCard(title = "Hint / Strategy", content = problem.hint)
+            }
+
+            // Revision Action
+            OutlinedButton(
+                onClick = {
+                    if (isInRevision) {
+                        onRemoveFromRevision(problem)
+                    } else {
+                        onAddToRevision(problem)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isInRevision) Color(0xFFEF4444) else Color(0xFF4F46E5)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isInRevision) Color(0xFFEF4444) else Color(0xFF4F46E5)
+                )
+            ) {
+                Text(
+                    text = if (isInRevision) "Remove from Revision" else "Add to Revision",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
 
             // Primary Actions: Practice Code Workspace
