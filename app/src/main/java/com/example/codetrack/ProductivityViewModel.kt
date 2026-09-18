@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.codetrack.data.model.Goal
 import com.example.codetrack.data.model.ActivityRecord
 import com.example.codetrack.data.model.DailyProgress
+import com.example.codetrack.data.model.WeeklyStatistics
 import com.example.codetrack.data.repository.GoalRepository
 import com.example.codetrack.data.repository.StreakRepository
 import com.example.codetrack.data.repository.ProgressRepository
+import com.example.codetrack.data.repository.StatisticsRepository
 import kotlinx.coroutines.flow.*
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -16,7 +18,8 @@ import java.time.temporal.ChronoUnit
 class ProductivityViewModel(
     private val goalRepository: GoalRepository = GoalRepository.getInstance(),
     private val streakRepository: StreakRepository = StreakRepository.getInstance(),
-    private val progressRepository: ProgressRepository = ProgressRepository.getInstance()
+    private val progressRepository: ProgressRepository = ProgressRepository.getInstance(),
+    private val statisticsRepository: StatisticsRepository = StatisticsRepository.getInstance()
 ) : ViewModel() {
     
     // Daily Goals State
@@ -70,17 +73,29 @@ class ProductivityViewModel(
     // Daily Progress State
     val dailyProgress: StateFlow<DailyProgress> = progressRepository.dailyProgress
 
+    // Weekly Statistics State
+    val weeklyStatistics: StateFlow<WeeklyStatistics> = statisticsRepository.weeklyStats
+
     fun toggleGoal(goalId: Int) {
         val goal = goals.value.find { it.id == goalId }
         if (goal != null) {
             val newCheckedState = !goal.isChecked
             goalRepository.toggleGoal(goalId)
             
-            // Sync with DailyProgress for specific goals
+            // Sync with DailyProgress and WeeklyStatistics for specific goals
             when (goalId) {
-                1 -> progressRepository.setDsaGoalCompleted(newCheckedState)
-                2 -> progressRepository.setAptitudeGoalCompleted(newCheckedState)
-                3 -> progressRepository.setInterviewGoalCompleted(newCheckedState)
+                1 -> {
+                    progressRepository.setDsaGoalCompleted(newCheckedState)
+                    statisticsRepository.setDsaGoalCompleted(newCheckedState)
+                }
+                2 -> {
+                    progressRepository.setAptitudeGoalCompleted(newCheckedState)
+                    statisticsRepository.setAptitudeGoalCompleted(newCheckedState)
+                }
+                3 -> {
+                    progressRepository.setInterviewGoalCompleted(newCheckedState)
+                    statisticsRepository.setInterviewGoalCompleted(newCheckedState)
+                }
             }
         }
     }

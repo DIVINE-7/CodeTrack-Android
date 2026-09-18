@@ -25,8 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 
 import com.example.codetrack.data.model.Goal
+import com.example.codetrack.data.model.WeeklyStatistics
 
 @Composable
 fun ProductivityScreen(
@@ -43,6 +45,7 @@ fun ProductivityScreen(
     val activeDaysThisWeek by viewModel.activeDaysThisWeek.collectAsState()
 
     val dailyProgress by viewModel.dailyProgress.collectAsState()
+    val weeklyStats by viewModel.weeklyStatistics.collectAsState()
 
     // Calculate overall daily progress from categories
     val categoryCompleted = dailyProgress.dsaCompleted + dailyProgress.aptitudeCompleted + dailyProgress.interviewCompleted
@@ -114,6 +117,11 @@ fun ProductivityScreen(
             // 6. PREPARATION OVERVIEW SECTION
             item {
                 PreparationOverview()
+            }
+            
+            // 6.5 WEEKLY STATISTICS SECTION
+            item {
+                WeeklyStatisticsSection(stats = weeklyStats)
             }
             
             // 7. MOTIVATIONAL SECTION
@@ -445,6 +453,125 @@ fun StatCard(title: String, value: String, icon: ImageVector, modifier: Modifier
             Column {
                 Text(text = title, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
                 Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun WeeklyStatisticsSection(stats: WeeklyStatistics) {
+    Column {
+        Text(
+            text = "Weekly Statistics",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "Weekly Overview",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    WeeklyStatItem("Tasks Completed", stats.totalCompleted.toString(), Color(0xFF4F46E5))
+                    WeeklyStatItem("Active Days", "${stats.activeDays} / 7", Color(0xFF10B981))
+                    WeeklyStatItem("Weekly Completion", "${(stats.completionPercentage * 100).roundToInt()}%", Color(0xFFF59E0B))
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = Color(0xFFF3F4F6))
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                WeeklyCategoryProgress("DSA", stats.dsaCompleted, stats.dsaTarget, stats.dsaProgress, Color(0xFF4F46E5))
+                WeeklyCategoryProgress("Aptitude", stats.aptitudeCompleted, stats.aptitudeTarget, stats.aptitudeProgress, Color(0xFF10B981))
+                WeeklyCategoryProgress("Interview", stats.interviewCompleted, stats.interviewTarget, stats.interviewProgress, Color(0xFFEC4899))
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "7-Day Activity",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                ActivityChart(stats.weeklyActivity)
+            }
+        }
+    }
+}
+
+@Composable
+fun WeeklyStatItem(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = color)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+    }
+}
+
+@Composable
+fun WeeklyCategoryProgress(label: String, completed: Int, target: Int, progress: Float, color: Color) {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            Text(text = "$completed / $target", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+            color = color,
+            trackColor = Color(0xFFF3F4F6)
+        )
+    }
+}
+
+@Composable
+fun ActivityChart(activity: List<Int>) {
+    val days = listOf("M", "T", "W", "T", "F", "S", "S")
+    val maxActivity = activity.maxOrNull()?.coerceAtLeast(1) ?: 1
+    
+    Row(
+        modifier = Modifier.fillMaxWidth().height(100.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        activity.forEachIndexed { index, count ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier.weight(1f)
+            ) {
+                val barHeight = (count.toFloat() / maxActivity * 70).dp
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(barHeight)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                        .background(if (count > 0) Color(0xFF4F46E5) else Color(0xFFF3F4F6))
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = days[index],
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
             }
         }
     }
