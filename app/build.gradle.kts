@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+
 }
 
 android {
@@ -52,6 +54,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+<<<<<<< HEAD
     implementation(libs.androidx.navigation.compose)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+=======
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+>>>>>>> bc8b978 (feat: implement Room database layer)
 }
