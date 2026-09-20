@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 
 import com.example.codetrack.ProductivityScreen
 import com.example.codetrack.ProductivityViewModel
+import com.example.codetrack.ProgressScreen
 import com.example.codetrack.data.model.RevisionCategory
 import com.example.codetrack.data.repository.DsaQuestionBank
 import com.example.codetrack.ui.screens.CodingPracticeScreen
@@ -188,8 +189,10 @@ fun AppNavigation(
 
         // TEMPORARY PROGRESS
         composable("progress") {
-            androidx.compose.material3.Text(
-                text = "Progress"
+            ProgressScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }
