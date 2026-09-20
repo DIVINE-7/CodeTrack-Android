@@ -18,31 +18,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.codetrack.data.repository.ProgressRepository
+import com.example.codetrack.data.repository.StatisticsRepository
+import com.example.codetrack.data.repository.StreakRepository
+import java.time.LocalDate
 
 @Composable
-fun ProgressScreen(
-    onBack: () -> Unit
-) {
-    val repository = ProgressRepository.getInstance()
+fun ProgressScreen() {
+    val progressRepository = ProgressRepository.getInstance()
+    val statisticsRepository = StatisticsRepository.getInstance()
+    val streakRepository = StreakRepository.getInstance()
 
-    val dailyProgress by repository.dailyProgress.collectAsState()
+    val dailyProgress by progressRepository.dailyProgress.collectAsState()
+    val weeklyStats by statisticsRepository.weeklyStats.collectAsState()
+    val activityRecords by streakRepository.activityRecords.collectAsState()
 
-    val totalCompleted =
-        dailyProgress.dsaCompleted +
-                dailyProgress.aptitudeCompleted +
-                dailyProgress.interviewCompleted
-
-    val totalTarget =
-        dailyProgress.dsaTarget +
-                dailyProgress.aptitudeTarget +
-                dailyProgress.interviewTarget
-
-    val overallProgress =
-        if (totalTarget > 0) {
-            totalCompleted.toFloat() / totalTarget
-        } else {
-            0f
-        }
+    val currentStreak = calculateStreak(activityRecords)
 
     Column(
         modifier = Modifier
@@ -59,12 +49,13 @@ fun ProgressScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Track your daily learning progress",
+            text = "Track your coding and placement preparation",
             style = MaterialTheme.typography.bodyLarge
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
+        // Current streak
         Card(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -72,40 +63,117 @@ fun ProgressScreen(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Overall Progress",
+                    text = "Current Streak",
                     style = MaterialTheme.typography.titleLarge
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "$totalCompleted / $totalTarget completed"
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LinearProgressIndicator(
-                    progress = { overallProgress },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "${(overallProgress * 100).toInt()}% completed"
+                    text = "$currentStreak days",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Text(
+                    text = "Keep practicing every day!"
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Weekly overview
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Weekly Overview",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "${weeklyStats.totalCompleted} / ${weeklyStats.totalTarget} completed"
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LinearProgressIndicator(
+                    progress = { weeklyStats.completionPercentage },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "${(weeklyStats.completionPercentage * 100).toInt()}% completed"
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Active days: ${weeklyStats.activeDays}"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Weekly activity
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Weekly Activity",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val days = listOf(
+                        "M", "T", "W", "T", "F", "S", "S"
+                    )
+
+                    days.forEachIndexed { index, day ->
+                        Column(
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                        ) {
+                            Text(day)
+
+                            Spacer(
+                                modifier = Modifier.height(4.dp)
+                            )
+
+                            Text(
+                                text = weeklyStats.weeklyActivity[index].toString()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Category progress
         ProgressCard(
             title = "DSA",
             completed = dailyProgress.dsaCompleted,
             target = dailyProgress.dsaTarget
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         ProgressCard(
             title = "Aptitude",
@@ -113,7 +181,7 @@ fun ProgressScreen(
             target = dailyProgress.aptitudeTarget
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         ProgressCard(
             title = "Interview",
@@ -142,6 +210,7 @@ private fun ProgressCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+
             Row(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -167,4 +236,25 @@ private fun ProgressCard(
             )
         }
     }
+}
+
+private fun calculateStreak(
+    records: List<com.example.codetrack.data.model.ActivityRecord>
+): Int {
+    if (records.isEmpty()) return 0
+
+    val activeDates = records
+        .filter { it.problemsSolved > 0 }
+        .map { it.date }
+        .toSet()
+
+    var streak = 0
+    var date = LocalDate.now()
+
+    while (activeDates.contains(date)) {
+        streak++
+        date = date.minusDays(1)
+    }
+
+    return streak
 }

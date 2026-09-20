@@ -189,11 +189,7 @@ fun AppNavigation(
 
         // TEMPORARY PROGRESS
         composable("progress") {
-            ProgressScreen(
-                onBack = {
-                    navController.popBackStack()
-                }
-            )
+            ProgressScreen()
         }
     }
 }
