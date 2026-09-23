@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.QuestionAnswer
@@ -35,20 +36,21 @@ import com.example.codetrack.data.model.RevisionCategory
 @Composable
 fun ProductivityScreen(
     onNavigateToDsa: () -> Unit = {},
+    onBack: () -> Unit = {},
     viewModel: ProductivityViewModel = remember { ProductivityViewModel() }
 ) {
     val context = LocalContext.current
-    
+
     // Collect states from ViewModel
     val goalsState by viewModel.goals.collectAsState()
-    
+
     val currentStreak by viewModel.currentStreak.collectAsState()
     val problemsSolvedThisWeek by viewModel.problemsSolvedThisWeek.collectAsState()
     val activeDaysThisWeek by viewModel.activeDaysThisWeek.collectAsState()
 
     val dailyProgress by viewModel.dailyProgress.collectAsState()
     val weeklyStats by viewModel.weeklyStatistics.collectAsState()
-    
+
     val revisions by viewModel.revisions.collectAsState()
     val dueTodayCount by viewModel.dueTodayRevisionsCount.collectAsState()
 
@@ -56,7 +58,7 @@ fun ProductivityScreen(
     val categoryCompleted = dailyProgress.dsaCompleted + dailyProgress.aptitudeCompleted + dailyProgress.interviewCompleted
     val categoryTarget = dailyProgress.dsaTarget + dailyProgress.aptitudeTarget + dailyProgress.interviewTarget
     val overallProgress = if (categoryTarget > 0) categoryCompleted.toFloat() / categoryTarget else 0f
-    
+
     val animatedProgress by animateFloatAsState(
         targetValue = overallProgress,
         label = "progressAnimation"
@@ -75,9 +77,11 @@ fun ProductivityScreen(
         ) {
             // 1. TOP HEADER
             item {
-                ProductivityHeader()
+                ProductivityHeader(
+                    onBack = onBack
+                )
             }
-            
+
             // 2. TODAY'S PROGRESS CARD
             item {
                 TodayProgressCard(
@@ -88,7 +92,7 @@ fun ProductivityScreen(
                     interviewProgress = "${dailyProgress.interviewCompleted} / ${dailyProgress.interviewTarget}"
                 )
             }
-            
+
             // 3. CURRENT STREAK CARD
             item {
                 StreakCard(
@@ -97,7 +101,7 @@ fun ProductivityScreen(
                     daysActive = activeDaysThisWeek
                 )
             }
-            
+
             // 4. DAILY GOALS SECTION
             item {
                 DailyGoalsSection(
@@ -107,7 +111,7 @@ fun ProductivityScreen(
                     }
                 )
             }
-            
+
             // 5. QUICK PRACTICE SECTION
             item {
                 QuickPracticeSection { practiceType ->
@@ -118,17 +122,17 @@ fun ProductivityScreen(
                     }
                 }
             }
-            
+
             // 6. PREPARATION OVERVIEW SECTION
             item {
                 PreparationOverview()
             }
-            
+
             // 6.5 WEEKLY STATISTICS SECTION
             item {
                 WeeklyStatisticsSection(stats = weeklyStats)
             }
-            
+
             // 6.7 REVISION TRACKER SECTION
             item {
                 RevisionTrackerSection(
@@ -139,7 +143,7 @@ fun ProductivityScreen(
                     }
                 )
             }
-            
+
             // 7. MOTIVATIONAL SECTION
             item {
                 MotivationCard()
@@ -149,27 +153,50 @@ fun ProductivityScreen(
 }
 
 @Composable
-fun ProductivityHeader() {
+fun ProductivityHeader(
+    onBack: () -> Unit
+) {
     Column {
-        Text(
-            text = "Productivity",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1A1A1A)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+
+            Text(
+                text = "Productivity",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A)
+            )
+        }
+
         Text(
             text = "Build consistency. Prepare smarter. Get placement ready.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = Color.Gray,
+            modifier = Modifier.padding(start = 4.dp)
         )
+
         Spacer(modifier = Modifier.height(12.dp))
+
         Surface(
             color = Color(0xFFE8F0FE),
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
                 text = "✨ Your daily progress matters.",
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 6.dp
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color(0xFF1967D2),
                 fontWeight = FontWeight.Medium
@@ -209,15 +236,15 @@ fun TodayProgressCard(
                     color = Color(0xFF4F46E5)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(20.dp))
-            
+
             ProgressItemRow("DSA Problems", dsaProgress, Icons.Default.Code)
             ProgressItemRow("Aptitude Questions", aptitudeProgress, Icons.Default.Timer)
             ProgressItemRow("Interview Questions", interviewProgress, Icons.Default.QuestionAnswer)
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
@@ -254,14 +281,14 @@ fun ProgressItemRow(label: String, value: String, icon: ImageVector) {
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = label, 
-            style = MaterialTheme.typography.bodyMedium, 
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
             color = Color(0xFF374151)
         )
         Text(
-            text = value, 
-            style = MaterialTheme.typography.bodyMedium, 
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF111827)
         )
@@ -303,7 +330,7 @@ fun StreakCard(streak: Int, problemsSolved: Int, daysActive: Int) {
                     color = Color(0xFFEA580C)
                 )
             }
-            
+
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 StreakStat("Problems this week", problemsSolved.toString())
                 StreakStat("Days active", "$daysActive/7")
@@ -412,8 +439,8 @@ fun PracticeCard(title: String, desc: String, icon: ImageVector, modifier: Modif
             Spacer(modifier = Modifier.height(12.dp))
             Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                text = desc, 
-                style = MaterialTheme.typography.labelSmall, 
+                text = desc,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.height(32.dp)
@@ -506,15 +533,15 @@ fun WeeklyStatisticsSection(stats: WeeklyStatistics) {
                     WeeklyStatItem("Active Days", "${stats.activeDays} / 7", Color(0xFF10B981))
                     WeeklyStatItem("Weekly Completion", "${(stats.completionPercentage * 100).roundToInt()}%", Color(0xFFF59E0B))
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
                 HorizontalDivider(color = Color(0xFFF3F4F6))
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 WeeklyCategoryProgress("DSA", stats.dsaCompleted, stats.dsaTarget, stats.dsaProgress, Color(0xFF4F46E5))
                 WeeklyCategoryProgress("Aptitude", stats.aptitudeCompleted, stats.aptitudeTarget, stats.aptitudeProgress, Color(0xFF10B981))
                 WeeklyCategoryProgress("Interview", stats.interviewCompleted, stats.interviewTarget, stats.interviewProgress, Color(0xFFEC4899))
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "7-Day Activity",
@@ -562,7 +589,7 @@ fun WeeklyCategoryProgress(label: String, completed: Int, target: Int, progress:
 fun ActivityChart(activity: List<Int>) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
     val maxActivity = activity.maxOrNull()?.coerceAtLeast(1) ?: 1
-    
+
     Row(
         modifier = Modifier.fillMaxWidth().height(100.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -600,11 +627,11 @@ fun RevisionTrackerSection(
     onToggleRevision: (Int, Boolean) -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf<RevisionCategory?>(null) }
-    
+
     val filteredRevisions = remember(revisions, selectedCategory) {
         if (selectedCategory == null) revisions else revisions.filter { it.category == selectedCategory }
     }
-    
+
     val completedCount = revisions.count { it.isCompleted }
     val totalCount = revisions.size
     val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
@@ -617,7 +644,7 @@ fun RevisionTrackerSection(
             color = Color(0xFF1A1A1A)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -657,7 +684,7 @@ fun RevisionTrackerSection(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
                 LinearProgressIndicator(
                     progress = { progress },
@@ -665,9 +692,9 @@ fun RevisionTrackerSection(
                     color = Color(0xFF4F46E5),
                     trackColor = Color(0xFFEEF2FF)
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Filters
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -687,9 +714,9 @@ fun RevisionTrackerSection(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 if (filteredRevisions.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
@@ -761,7 +788,7 @@ fun RevisionItemRow(item: RevisionItem, onToggleRevision: (Int, Boolean) -> Unit
                 )
             }
         }
-        
+
         Button(
             onClick = { onToggleRevision(item.id, !item.isCompleted) },
             shape = RoundedCornerShape(8.dp),
