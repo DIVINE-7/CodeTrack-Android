@@ -61,9 +61,8 @@ fun AppNavigation(
         composable("productivity") {
             ProductivityScreen(
                 viewModel = productivityViewModel,
-                onNavigateToDsa = {
-                    navController.navigate("dsa")
-                }
+                onNavigateToDsa = { navController.navigate("dsa") },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -187,9 +186,18 @@ fun AppNavigation(
             }
         }
 
-        // TEMPORARY PROGRESS
+        // PROGRESS
         composable("progress") {
-            ProgressScreen()
+            ProgressScreen(
+                onBack = {
+                    navController.navigate("dashboard") {
+                        popUpTo("dashboard") {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }

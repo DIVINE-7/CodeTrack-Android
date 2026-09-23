@@ -8,253 +8,411 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.codetrack.data.repository.ProgressRepository
-import com.example.codetrack.data.repository.StatisticsRepository
-import com.example.codetrack.data.repository.StreakRepository
-import java.time.LocalDate
+import kotlin.math.roundToInt
 
 @Composable
-fun ProgressScreen() {
-    val progressRepository = ProgressRepository.getInstance()
-    val statisticsRepository = StatisticsRepository.getInstance()
-    val streakRepository = StreakRepository.getInstance()
+fun ProgressScreen(
+    onBack: () -> Unit
+) {
 
-    val dailyProgress by progressRepository.dailyProgress.collectAsState()
-    val weeklyStats by statisticsRepository.weeklyStats.collectAsState()
-    val activityRecords by streakRepository.activityRecords.collectAsState()
+    // Current streak
+    val currentStreak = 5
 
-    val currentStreak = calculateStreak(activityRecords)
+    // Weekly overview
+    val weeklyCompleted = 62
+    val weeklyTarget = 90
 
-    Column(
+    // Weekly activity
+    val weeklyActivity = listOf(4, 6, 3, 7, 5, 8, 2)
+
+    // Daily progress
+    val dsaCompleted = 2
+    val dsaTarget = 5
+
+    val aptitudeCompleted = 5
+    val aptitudeTarget = 10
+
+    val interviewCompleted = 1
+    val interviewTarget = 3
+
+    val weeklyProgress =
+        weeklyCompleted.toFloat() / weeklyTarget.toFloat()
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Top
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        Text(
-            text = "Progress",
-            style = MaterialTheme.typography.headlineLarge
-        )
+        // ------------------------------------------------
+        // HEADER
+        // ------------------------------------------------
 
-        Spacer(modifier = Modifier.height(8.dp))
+        item {
 
-        Text(
-            text = "Track your coding and placement preparation",
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Current streak
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Current Streak",
-                    style = MaterialTheme.typography.titleLarge
-                )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "$currentStreak days",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-
-                Text(
-                    text = "Keep practicing every day!"
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Weekly overview
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Weekly Overview",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "${weeklyStats.totalCompleted} / ${weeklyStats.totalTarget} completed"
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LinearProgressIndicator(
-                    progress = { weeklyStats.completionPercentage },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "${(weeklyStats.completionPercentage * 100).toInt()}% completed"
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Active days: ${weeklyStats.activeDays}"
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Weekly activity
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Weekly Activity",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                IconButton(
+                    onClick = onBack
                 ) {
-                    val days = listOf(
-                        "M", "T", "W", "T", "F", "S", "S"
+
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+
+                Text(
+                    text = "Progress",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+
+        // ------------------------------------------------
+        // CURRENT STREAK
+        // ------------------------------------------------
+
+        item {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+
+                    Text(
+                        text = "Current Streak",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
 
-                    days.forEachIndexed { index, day ->
-                        Column(
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-                        ) {
-                            Text(day)
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
 
-                            Spacer(
-                                modifier = Modifier.height(4.dp)
-                            )
-
-                            Text(
-                                text = weeklyStats.weeklyActivity[index].toString()
-                            )
-                        }
-                    }
+                    Text(
+                        text = "$currentStreak days",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Category progress
-        ProgressCard(
-            title = "DSA",
-            completed = dailyProgress.dsaCompleted,
-            target = dailyProgress.dsaTarget
-        )
+        // ------------------------------------------------
+        // WEEKLY OVERVIEW
+        // ------------------------------------------------
 
-        Spacer(modifier = Modifier.height(10.dp))
+        item {
 
-        ProgressCard(
-            title = "Aptitude",
-            completed = dailyProgress.aptitudeCompleted,
-            target = dailyProgress.aptitudeTarget
-        )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
 
-        Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
 
-        ProgressCard(
-            title = "Interview",
-            completed = dailyProgress.interviewCompleted,
-            target = dailyProgress.interviewTarget
-        )
-    }
-}
+                    Text(
+                        text = "Weekly Overview",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
 
-@Composable
-private fun ProgressCard(
-    title: String,
-    completed: Int,
-    target: Int
-) {
-    val progress =
-        if (target > 0) {
-            completed.toFloat() / target
-        } else {
-            0f
+                    Spacer(
+                        modifier = Modifier.height(12.dp)
+                    )
+
+                    Text(
+                        text = "$weeklyCompleted / $weeklyTarget completed",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(12.dp)
+                    )
+
+                    LinearProgressIndicator(
+                        progress = {
+                            weeklyProgress.coerceIn(0f, 1f)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text = "${(weeklyProgress * 100).roundToInt()}% completed",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth()
+        // ------------------------------------------------
+        // WEEKLY ACTIVITY
+        // ------------------------------------------------
+
+        item {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium
-                )
 
-                Spacer(
-                    modifier = Modifier.weight(1f)
-                )
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
 
-                Text(
-                    text = "$completed / $target"
-                )
+                    Text(
+                        text = "Weekly Activity",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(20.dp)
+                    )
+
+                    WeeklyActivity(
+                        activity = weeklyActivity
+                    )
+                }
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth()
+        // ------------------------------------------------
+        // DAILY PROGRESS TITLE
+        // ------------------------------------------------
+
+        item {
+
+            Text(
+                text = "Daily Progress",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+
+        // ------------------------------------------------
+        // DSA
+        // ------------------------------------------------
+
+        item {
+
+            DailyProgressCard(
+                title = "DSA",
+                completed = dsaCompleted,
+                target = dsaTarget
+            )
+        }
+
+
+        // ------------------------------------------------
+        // APTITUDE
+        // ------------------------------------------------
+
+        item {
+
+            DailyProgressCard(
+                title = "Aptitude",
+                completed = aptitudeCompleted,
+                target = aptitudeTarget
+            )
+        }
+
+
+        // ------------------------------------------------
+        // INTERVIEW
+        // ------------------------------------------------
+
+        item {
+
+            DailyProgressCard(
+                title = "Interview",
+                completed = interviewCompleted,
+                target = interviewTarget
+            )
+        }
+
+
+        item {
+
+            Spacer(
+                modifier = Modifier.height(20.dp)
             )
         }
     }
 }
 
-private fun calculateStreak(
-    records: List<com.example.codetrack.data.model.ActivityRecord>
-): Int {
-    if (records.isEmpty()) return 0
 
-    val activeDates = records
-        .filter { it.problemsSolved > 0 }
-        .map { it.date }
-        .toSet()
+// ========================================================
+// DAILY PROGRESS CARD
+// ========================================================
 
-    var streak = 0
-    var date = LocalDate.now()
+@Composable
+private fun DailyProgressCard(
+    title: String,
+    completed: Int,
+    target: Int
+) {
 
-    while (activeDates.contains(date)) {
-        streak++
-        date = date.minusDays(1)
+    val progress =
+        if (target > 0) {
+            completed.toFloat() / target.toFloat()
+        } else {
+            0f
+        }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "$completed / $target",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            LinearProgressIndicator(
+                progress = {
+                    progress.coerceIn(0f, 1f)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = "${(progress * 100).roundToInt()}% completed",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
+}
 
-    return streak
+
+// ========================================================
+// WEEKLY ACTIVITY
+// ========================================================
+
+@Composable
+private fun WeeklyActivity(
+    activity: List<Int>
+) {
+
+    val days = listOf(
+        "M",
+        "T",
+        "W",
+        "T",
+        "F",
+        "S",
+        "S"
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+
+        activity.take(7).forEachIndexed { index, count ->
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier = Modifier.height(6.dp)
+                )
+
+                Text(
+                    text = days[index],
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
 }
