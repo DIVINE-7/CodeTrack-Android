@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.codetrack.ui.screens.ProgressScreen
 
 import com.example.codetrack.ProductivityViewModel
 import com.example.codetrack.data.model.DsaProblem
@@ -321,10 +322,7 @@ fun MainScreen() {
 
                         // PROGRESS
                         3 -> {
-
-                            PlaceholderScreen(
-                                "Progress"
-                            )
+                            ProgressScreen()
                         }
 
                         // SETTINGS
