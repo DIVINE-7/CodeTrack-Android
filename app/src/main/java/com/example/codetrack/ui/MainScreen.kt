@@ -23,6 +23,10 @@ import com.example.codetrack.ui.screens.ProblemDetailScreen
 import com.example.codetrack.ui.screens.ProblemsScreen
 import com.example.codetrack.ui.screens.ProgressScreen
 import com.example.codetrack.ui.screens.WelcomeScreen
+import com.example.codetrack.ui.screens.RevisionScreen
+import com.example.codetrack.ui.screens.SettingsScreen
+import com.example.codetrack.ui.theme.CodeTrackTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 sealed class NavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : NavItem("home", Icons.Filled.Home, "Home")
@@ -33,7 +37,10 @@ sealed class NavItem(val route: String, val icon: ImageVector, val label: String
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    darkTheme: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit)
+{
     var showWelcomeScreen by remember { mutableStateOf(true) }
     var selectedItem by remember { mutableIntStateOf(0) }
     var selectedDetailProblem by remember { mutableStateOf<UiProblem?>(null) }
@@ -111,8 +118,12 @@ fun MainScreen() {
                             )
                         }
                     }
+                    2 -> RevisionScreen()
                     3 -> ProgressScreen()
-                    else -> PlaceholderScreen(items[selectedItem].label)
+                    else -> SettingsScreen(
+                        darkTheme = darkTheme,
+                        onDarkThemeChange = onDarkThemeChange
+                    )
                 }
             }
         }
@@ -129,10 +140,13 @@ fun PlaceholderScreen(name: String) {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
-    com.example.codetrack.ui.theme.CodeTrackTheme {
-        MainScreen()
+    CodeTrackTheme {
+        MainScreen(
+            darkTheme = false,
+            onDarkThemeChange = {}
+        )
     }
 }
