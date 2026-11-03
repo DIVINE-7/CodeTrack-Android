@@ -2,23 +2,38 @@ package com.example.codetrack
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.codetrack.data.model.Goal
+import com.example.codetrack.data.local.toRevisionItem
 import com.example.codetrack.data.model.ActivityRecord
 import com.example.codetrack.data.model.DailyProgress
-import com.example.codetrack.data.model.WeeklyStatistics
+import com.example.codetrack.data.model.Goal
+import com.example.codetrack.data.model.RevisionCategory
 import com.example.codetrack.data.model.RevisionItem
-import com.example.codetrack.data.repository.*
-import kotlinx.coroutines.flow.*
+import com.example.codetrack.data.model.WeeklyStatistics
+import com.example.codetrack.data.repository.CodeTrackRepository
+import com.example.codetrack.data.repository.GoalRepository
+import com.example.codetrack.data.repository.ProgressRepository
+import com.example.codetrack.data.repository.StatisticsRepository
+import com.example.codetrack.data.repository.StreakRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 class ProductivityViewModel(
     private val goalRepository: GoalRepository = GoalRepository.getInstance(),
     private val streakRepository: StreakRepository = StreakRepository.getInstance(),
     private val progressRepository: ProgressRepository = ProgressRepository.getInstance(),
     private val statisticsRepository: StatisticsRepository = StatisticsRepository.getInstance(),
-    private val revisionRepository: RevisionRepository = RevisionRepository.getInstance()
+    private val codeTrackRepository: CodeTrackRepository? = try {
+        CodeTrackApplication.repository
+    } catch (_: Throwable) {
+        null
+    }
 ) : ViewModel() {
     
     // Daily Goals State
@@ -75,8 +90,16 @@ class ProductivityViewModel(
     // Weekly Statistics State
     val weeklyStatistics: StateFlow<WeeklyStatistics> = statisticsRepository.weeklyStats
 
-    // Revision State
-    val revisions: StateFlow<List<RevisionItem>> = revisionRepository.revisions
+    // Revision State (Backed by Room database)
+    val revisions: StateFlow<List<RevisionItem>> = (
+        codeTrackRepository?.getAllRevisions()?.map { entities ->
+            entities.map { it.toRevisionItem() }
+        } ?: emptyFlow()
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     val completedRevisionsCount: StateFlow<Int> = revisions
         .map { it.count { item -> item.isCompleted } }
@@ -134,23 +157,35 @@ class ProductivityViewModel(
     }
 
     fun markRevisionCompleted(id: Int, isCompleted: Boolean) {
-        revisionRepository.markCompleted(id, isCompleted)
+        viewModelScope.launch {
+            codeTrackRepository?.markRevisionCompleted(id, isCompleted)
+        }
     }
 
-    fun addRevision(problemId: Int, title: String, category: com.example.codetrack.data.model.RevisionCategory, topic: String) {
-        revisionRepository.addRevision(problemId, title, category, topic)
+    fun addRevision(problemId: Int, title: String, category: RevisionCategory, topic: String) {
+        viewModelScope.launch {
+            codeTrackRepository?.addRevision(problemId, title, category, topic)
+        }
     }
 
     fun removeRevision(id: Int) {
-        revisionRepository.removeRevision(id)
+        viewModelScope.launch {
+            codeTrackRepository?.deleteRevisionById(id)
+        }
     }
     
-    fun removeRevisionByProblemId(problemId: Int, category: com.example.codetrack.data.model.RevisionCategory) {
-        revisionRepository.removeRevisionByProblemId(problemId, category)
+    fun removeRevisionByProblemId(problemId: Int, category: RevisionCategory) {
+        viewModelScope.launch {
+            codeTrackRepository?.deleteRevisionByProblemIdAndCategory(problemId, category)
+        }
     }
     
-    fun isProblemInRevision(problemId: Int, category: com.example.codetrack.data.model.RevisionCategory): Boolean {
-        return revisionRepository.isProblemInRevision(problemId, category)
+    fun isProblemInRevision(problemId: Int, category: RevisionCategory): Boolean {
+        return revisions.value.any { it.problemId == problemId && it.category == category }
+    }
+
+    suspend fun isProblemInRevisionAsync(problemId: Int, category: RevisionCategory): Boolean {
+        return codeTrackRepository?.isProblemInRevision(problemId, category) ?: false
     }
 
     private fun calculateStreak(records: List<ActivityRecord>): Int {
