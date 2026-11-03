@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.codetrack.ui.screens.ProgressScreen
+import com.example.codetrack.ui.screens.SettingsScreen
 
 import com.example.codetrack.ProductivityViewModel
 import com.example.codetrack.data.model.DsaProblem
@@ -27,6 +28,7 @@ import com.example.codetrack.ui.models.UiProblem
 import com.example.codetrack.ui.screens.HomeScreen
 import com.example.codetrack.ui.screens.ProblemDetailScreen
 import com.example.codetrack.ui.screens.ProblemsScreen
+import com.example.codetrack.ui.screens.RevisionScreen
 import com.example.codetrack.ui.screens.WelcomeScreen
 
 sealed class NavItem(
@@ -66,7 +68,11 @@ sealed class NavItem(
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    darkTheme: Boolean = false,
+    onDarkThemeChange: (Boolean) -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
 
     var showWelcomeScreen by remember {
         mutableStateOf(true)
@@ -314,9 +320,8 @@ fun MainScreen() {
 
                         // REVISION
                         2 -> {
-
-                            PlaceholderScreen(
-                                "Revision"
+                            RevisionScreen(
+                                viewModel = productivityViewModel
                             )
                         }
 
@@ -327,9 +332,10 @@ fun MainScreen() {
 
                         // SETTINGS
                         4 -> {
-
-                            PlaceholderScreen(
-                                "Settings"
+                            SettingsScreen(
+                                darkTheme = darkTheme,
+                                onDarkThemeChange = onDarkThemeChange,
+                                onLogout = onLogout
                             )
                         }
                     }
