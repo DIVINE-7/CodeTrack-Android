@@ -27,6 +27,7 @@ import com.example.codetrack.ui.screens.RevisionScreen
 import com.example.codetrack.ui.screens.SettingsScreen
 import com.example.codetrack.ui.theme.CodeTrackTheme
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.codetrack.ui.screens.LoginScreen
 
 sealed class NavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : NavItem("home", Icons.Filled.Home, "Home")
@@ -44,6 +45,7 @@ fun MainScreen(
     var showWelcomeScreen by remember { mutableStateOf(true) }
     var selectedItem by remember { mutableIntStateOf(0) }
     var selectedDetailProblem by remember { mutableStateOf<UiProblem?>(null) }
+    var isLoggedIn by remember { mutableStateOf(false) }
 
     val items = listOf(
         NavItem.Home,
@@ -53,14 +55,32 @@ fun MainScreen(
         NavItem.Settings
     )
 
-    if (showWelcomeScreen) {
+    if (!isLoggedIn) {
+
+        LoginScreen(
+            onLogin = {
+                isLoggedIn = true
+                showWelcomeScreen = false
+            },
+            onRegisterClick = {
+                // Registration screen will be connected next
+            },
+            onForgotPasswordClick = {
+                // Forgot password screen will be connected next
+            }
+        )
+
+    } else if (showWelcomeScreen) {
+
         WelcomeScreen(
             onGetStarted = {
                 showWelcomeScreen = false
-                selectedItem = 0 // Navigate to Home
+                selectedItem = 0
             }
         )
+
     } else {
+
         Scaffold(
             topBar = {
                 // Show standard TopBar unless viewing Problem Detail (which has its own back top bar)
