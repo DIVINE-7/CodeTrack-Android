@@ -1,6 +1,7 @@
 package com.example.codetrack.ui.screens
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +33,9 @@ data class RecentActivity(
 )
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToProductivity: () -> Unit = {}
+) {
     val todayProblems = listOf(
         Problem("Two Sum", "Easy", "LeetCode"),
         Problem("Binary Search", "Easy", "LeetCode"),
@@ -56,11 +59,11 @@ fun HomeScreen() {
         }
 
         item {
-            StreakSection()
+            StreakSection(onClick = onNavigateToProductivity)
         }
 
         item {
-            ProgressSection()
+            ProgressSection(onClick = onNavigateToProductivity)
         }
 
         item {
@@ -128,15 +131,15 @@ private fun HeaderSection() {
 }
 
 @Composable
-private fun StreakSection() {
-    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+private fun StreakSection(onClick: () -> Unit = {}) {
+    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clickable { onClick() }) {
         StreakCard(streakCount = 7)
     }
 }
 
 @Composable
-private fun ProgressSection() {
-    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+private fun ProgressSection(onClick: () -> Unit = {}) {
+    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clickable { onClick() }) {
         ProgressCard(current = 4, total = 5)
     }
 }

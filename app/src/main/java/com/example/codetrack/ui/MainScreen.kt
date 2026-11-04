@@ -18,6 +18,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.codetrack.ui.screens.ProgressScreen
 import com.example.codetrack.ui.screens.SettingsScreen
+import androidx.activity.compose.BackHandler
+import com.example.codetrack.ProductivityScreen
+import com.example.codetrack.ui.screens.CodingPracticeScreen
 
 import com.example.codetrack.ProductivityViewModel
 import com.example.codetrack.data.model.DsaProblem
@@ -86,14 +89,22 @@ fun MainScreen(
         mutableStateOf<DsaProblem?>(null)
     }
 
+    var codingPracticeProblem by remember {
+        mutableStateOf<DsaProblem?>(null)
+    }
+
+    var showProductivityScreen by remember {
+        mutableStateOf(false)
+    }
+
     val productivityViewModel = remember {
         ProductivityViewModel()
     }
 
     val revisions by productivityViewModel.revisions.collectAsState()
 
-    val problems = remember {
-        DsaQuestionBank.getSampleProblems()
+    var problems by remember {
+        mutableStateOf(DsaQuestionBank.getSampleProblems())
     }
 
     val items = listOf(
@@ -119,39 +130,35 @@ fun MainScreen(
 
             topBar = {
 
-                if (selectedProblem == null) {
+                if (selectedProblem == null && codingPracticeProblem == null && !showProductivityScreen) {
                     CodeTrackTopBar()
                 }
             },
 
             bottomBar = {
-
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-
-                    items.forEachIndexed { index, item ->
-
-                        NavigationBarItem(
-
-                            icon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = item.label
-                                )
-                            },
-
-                            label = {
-                                Text(item.label)
-                            },
-
-                            selected = selectedItem == index,
-
-                            onClick = {
-                                selectedItem = index
-                                selectedProblem = null
-                            },
+                if (codingPracticeProblem == null && !showProductivityScreen) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 8.dp
+                    ) {
+                        items.forEachIndexed { index, item ->
+                            NavigationBarItem(
+                                icon = {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = item.label
+                                    )
+                                },
+                                label = {
+                                    Text(item.label)
+                                },
+                                selected = selectedItem == index && selectedProblem == null,
+                                onClick = {
+                                    selectedItem = index
+                                    selectedProblem = null
+                                    codingPracticeProblem = null
+                                    showProductivityScreen = false
+                                },
 
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor =
@@ -175,12 +182,13 @@ fun MainScreen(
                     }
                 }
             }
+        }
 
         ) { innerPadding ->
 
             Surface(
                 modifier = Modifier.padding(
-                    if (selectedProblem != null) {
+                    if (selectedProblem != null || codingPracticeProblem != null || showProductivityScreen) {
                         PaddingValues(0.dp)
                     } else {
                         innerPadding
@@ -190,7 +198,52 @@ fun MainScreen(
                 color = MaterialTheme.colorScheme.background
             ) {
 
-                if (selectedProblem != null) {
+                if (codingPracticeProblem != null) {
+                    BackHandler {
+                        codingPracticeProblem = null
+                    }
+
+                    CodingPracticeScreen(
+                        problem = codingPracticeProblem!!,
+                        onBack = {
+                            codingPracticeProblem = null
+                        },
+                        onSubmitSuccess = { solvedId ->
+                            val index = problems.indexOfFirst { it.id == solvedId }
+                            if (index >= 0) {
+                                val updated = problems[index].copy(isSolved = true)
+                                val updatedList = problems.toMutableList()
+                                updatedList[index] = updated
+                                problems = updatedList
+                                if (selectedProblem?.id == solvedId) {
+                                    selectedProblem = updated
+                                }
+                            }
+                            productivityViewModel.recordProblemSolved(1)
+                            productivityViewModel.recordDsaProgress(1)
+                            codingPracticeProblem = null
+                        }
+                    )
+                } else if (showProductivityScreen) {
+                    BackHandler {
+                        showProductivityScreen = false
+                    }
+
+                    ProductivityScreen(
+                        onBack = {
+                            showProductivityScreen = false
+                        },
+                        viewModel = productivityViewModel,
+                        onNavigateToDsa = {
+                            showProductivityScreen = false
+                            selectedItem = 1
+                            selectedProblem = null
+                        }
+                    )
+                } else if (selectedProblem != null) {
+                    BackHandler {
+                        selectedProblem = null
+                    }
 
                     val currentProblem = selectedProblem!!
 
@@ -220,7 +273,9 @@ fun MainScreen(
                                         isSolved =
                                             !problems[index].isSolved
                                     )
-
+                                val updatedList = problems.toMutableList()
+                                updatedList[index] = updated
+                                problems = updatedList
                                 selectedProblem = updated
                             }
                         },
@@ -252,9 +307,8 @@ fun MainScreen(
                             }
                         },
 
-                        onNavigateToCodingPractice = {
-                            // Coding Practice will be connected
-                            // after the main UI is compiling.
+                        onNavigateToCodingPractice = { dsaProblem ->
+                            codingPracticeProblem = dsaProblem
                         },
 
                         onAddToRevision = { dsaProblem ->
@@ -284,7 +338,11 @@ fun MainScreen(
 
                         // HOME
                         0 -> {
-                            HomeScreen()
+                            HomeScreen(
+                                onNavigateToProductivity = {
+                                    showProductivityScreen = true
+                                }
+                            )
                         }
 
                         // PROBLEMS
@@ -327,7 +385,11 @@ fun MainScreen(
 
                         // PROGRESS
                         3 -> {
-                            ProgressScreen()
+                            ProgressScreen(
+                                onNavigateToProductivity = {
+                                    showProductivityScreen = true
+                                }
+                            )
                         }
 
                         // SETTINGS
