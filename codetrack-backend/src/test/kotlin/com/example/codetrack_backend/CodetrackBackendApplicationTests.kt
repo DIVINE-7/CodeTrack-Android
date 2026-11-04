@@ -9,5 +9,4 @@ class CodetrackBackendApplicationTests {
 	@Test
 	fun contextLoads() {
 	}
-
 }
