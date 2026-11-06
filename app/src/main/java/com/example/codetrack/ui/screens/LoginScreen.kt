@@ -5,13 +5,17 @@ import com.example.codetrack.ui.screens.auth.LoginScreen as AuthLoginScreen
 
 @Composable
 fun LoginScreen(
-    onLogin: () -> Unit,
+    onLogin: (String, String) -> Unit,
     onRegisterClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     AuthLoginScreen(
         onLogin = onLogin,
         onRegisterClick = onRegisterClick,
-        onForgotPasswordClick = onForgotPasswordClick
+        onForgotPasswordClick = onForgotPasswordClick,
+        isLoading = isLoading,
+        errorMessage = errorMessage
     )
 }

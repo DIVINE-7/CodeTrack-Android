@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codetrack.ui.screens.auth.AuthValidationUtils
 import com.example.codetrack.ui.theme.CodeTrackTheme
 
 private val RegisterNavy = Color(0xFF10182D)
@@ -30,16 +32,20 @@ private val RegisterMuted = Color(0xFF94A3B8)
 @Composable
 fun RegisterScreen(
     onRegister: (String, String, String) -> Unit,
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
 
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var confirmVisible by rememberSaveable { mutableStateOf(false) }
+    var localError by remember { mutableStateOf("") }
+
+    val activeError = if (!errorMessage.isNullOrBlank()) errorMessage else localError
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -100,9 +106,10 @@ fun RegisterScreen(
                         label = "Full Name",
                         value = name,
                         placeholder = "Enter your full name",
+                        enabled = !isLoading,
                         onValueChange = {
                             name = it
-                            errorMessage = ""
+                            localError = ""
                         }
                     )
 
@@ -112,9 +119,10 @@ fun RegisterScreen(
                         label = "Email Address",
                         value = email,
                         placeholder = "Enter your email",
+                        enabled = !isLoading,
                         onValueChange = {
                             email = it
-                            errorMessage = ""
+                            localError = ""
                         },
                         keyboardType = KeyboardType.Email
                     )
@@ -124,10 +132,11 @@ fun RegisterScreen(
                     AuthRegisterField(
                         label = "Password",
                         value = password,
-                        placeholder = "Create a password",
+                        placeholder = "Create a password (8–72 characters)",
+                        enabled = !isLoading,
                         onValueChange = {
                             password = it
-                            errorMessage = ""
+                            localError = ""
                         },
                         isPassword = true,
                         passwordVisible = passwordVisible,
@@ -142,9 +151,10 @@ fun RegisterScreen(
                         label = "Confirm Password",
                         value = confirmPassword,
                         placeholder = "Confirm your password",
+                        enabled = !isLoading,
                         onValueChange = {
                             confirmPassword = it
-                            errorMessage = ""
+                            localError = ""
                         },
                         isPassword = true,
                         passwordVisible = confirmVisible,
@@ -155,9 +165,9 @@ fun RegisterScreen(
 
                     Spacer(Modifier.height(14.dp))
 
-                    if (errorMessage.isNotEmpty()) {
+                    if (activeError.isNotEmpty()) {
                         Text(
-                            errorMessage,
+                            activeError,
                             color = Color(0xFFFF6B6B),
                             fontSize = 13.sp
                         )
@@ -166,32 +176,36 @@ fun RegisterScreen(
 
                     Button(
                         onClick = {
+                            if (isLoading) return@Button
                             when {
                                 name.isBlank() ->
-                                    errorMessage = "Please enter your name."
+                                    localError = "Please enter your name."
 
                                 email.isBlank() ->
-                                    errorMessage = "Please enter your email."
+                                    localError = "Please enter your email."
 
-                                !android.util.Patterns.EMAIL_ADDRESS
-                                    .matcher(email).matches() ->
-                                    errorMessage = "Enter a valid email."
+                                !AuthValidationUtils.isValidEmail(email) ->
+                                    localError = "Enter a valid email."
 
                                 password.length < 8 ->
-                                    errorMessage = "Password must be at least 8 characters."
+                                    localError = "Password must be at least 8 characters."
+
+                                password.length > 72 ->
+                                    localError = "Password cannot exceed 72 characters."
 
                                 confirmPassword.isBlank() ->
-                                    errorMessage = "Please confirm your password."
+                                    localError = "Please confirm your password."
 
                                 password != confirmPassword ->
-                                    errorMessage = "Passwords do not match."
+                                    localError = "Passwords do not match."
 
                                 else -> {
-                                    errorMessage = ""
+                                    localError = ""
                                     onRegister(name.trim(), email.trim(), password)
                                 }
                             }
                         },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
@@ -200,11 +214,19 @@ fun RegisterScreen(
                             containerColor = RegisterAccent
                         )
                     ) {
-                        Text(
-                            "Create Account",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                "Create Account",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(16.dp))
@@ -220,7 +242,10 @@ fun RegisterScreen(
                             fontSize = 12.sp
                         )
 
-                        TextButton(onClick = onLoginClick) {
+                        TextButton(
+                            onClick = onLoginClick,
+                            enabled = !isLoading
+                        ) {
                             Text(
                                 "Login",
                                 color = Color(0xFF60A5FA),
@@ -243,6 +268,7 @@ private fun AuthRegisterField(
     keyboardType: KeyboardType = KeyboardType.Text,
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
+    enabled: Boolean = true,
     onVisibilityChange: (() -> Unit)? = null
 ) {
     Column {
@@ -258,6 +284,7 @@ private fun AuthRegisterField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(placeholder, color = RegisterMuted)
@@ -270,7 +297,8 @@ private fun AuthRegisterField(
             trailingIcon = if (isPassword) {
                 {
                     IconButton(
-                        onClick = { onVisibilityChange?.invoke() }
+                        onClick = { onVisibilityChange?.invoke() },
+                        enabled = enabled
                     ) {
                         Icon(
                             imageVector = if (passwordVisible)
@@ -292,7 +320,9 @@ private fun AuthRegisterField(
                 unfocusedTextColor = RegisterWhite,
                 focusedBorderColor = RegisterAccent,
                 unfocusedBorderColor = Color.DarkGray,
-                cursorColor = RegisterAccent
+                cursorColor = RegisterAccent,
+                disabledTextColor = RegisterWhite.copy(alpha = 0.6f),
+                disabledBorderColor = Color.DarkGray.copy(alpha = 0.4f)
             )
         )
     }

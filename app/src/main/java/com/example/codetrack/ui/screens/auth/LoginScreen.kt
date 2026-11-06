@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,14 +32,18 @@ private val MutedText = Color(0xFF94A3B8)
 
 @Composable
 fun LoginScreen(
-    onLogin: () -> Unit,
+    onLogin: (String, String) -> Unit,
     onRegisterClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var localError by remember { mutableStateOf("") }
+
+    val activeError = if (!errorMessage.isNullOrBlank()) errorMessage else localError
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -123,8 +128,9 @@ fun LoginScreen(
                         value = email,
                         onValueChange = {
                             email = it
-                            errorMessage = ""
+                            localError = ""
                         },
+                        enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text("Enter your email", color = MutedText)
@@ -139,7 +145,9 @@ fun LoginScreen(
                             unfocusedTextColor = TextWhite,
                             focusedBorderColor = AccentBlue,
                             unfocusedBorderColor = Color.DarkGray,
-                            cursorColor = AccentBlue
+                            cursorColor = AccentBlue,
+                            disabledTextColor = TextWhite.copy(alpha = 0.6f),
+                            disabledBorderColor = Color.DarkGray.copy(alpha = 0.4f)
                         )
                     )
 
@@ -157,8 +165,9 @@ fun LoginScreen(
                         value = password,
                         onValueChange = {
                             password = it
-                            errorMessage = ""
+                            localError = ""
                         },
+                        enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text("Enter your password", color = MutedText)
@@ -194,7 +203,9 @@ fun LoginScreen(
                             unfocusedTextColor = TextWhite,
                             focusedBorderColor = AccentBlue,
                             unfocusedBorderColor = Color.DarkGray,
-                            cursorColor = AccentBlue
+                            cursorColor = AccentBlue,
+                            disabledTextColor = TextWhite.copy(alpha = 0.6f),
+                            disabledBorderColor = Color.DarkGray.copy(alpha = 0.4f)
                         )
                     )
 
@@ -205,7 +216,8 @@ fun LoginScreen(
                         contentAlignment = Alignment.CenterEnd
                     ) {
                         TextButton(
-                            onClick = onForgotPasswordClick
+                            onClick = onForgotPasswordClick,
+                            enabled = !isLoading
                         ) {
                             Text(
                                 "Forgot Password?",
@@ -214,9 +226,9 @@ fun LoginScreen(
                         }
                     }
 
-                    if (errorMessage.isNotEmpty()) {
+                    if (activeError.isNotEmpty()) {
                         Text(
-                            text = errorMessage,
+                            text = activeError,
                             color = Color(0xFFFF6B6B),
                             fontSize = 13.sp
                         )
@@ -227,23 +239,24 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
+                            if (isLoading) return@Button
                             when {
                                 email.isBlank() ->
-                                    errorMessage = "Please enter your email."
+                                    localError = "Please enter your email."
 
-                                !android.util.Patterns.EMAIL_ADDRESS
-                                    .matcher(email).matches() ->
-                                    errorMessage = "Enter a valid email address."
+                                !AuthValidationUtils.isValidEmail(email) ->
+                                    localError = "Enter a valid email address."
 
                                 password.isBlank() ->
-                                    errorMessage = "Please enter your password."
+                                    localError = "Please enter your password."
 
                                 else -> {
-                                    errorMessage = ""
-                                    onLogin()
+                                    localError = ""
+                                    onLogin(email.trim(), password)
                                 }
                             }
                         },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -252,11 +265,19 @@ fun LoginScreen(
                             containerColor = AccentBlue
                         )
                     ) {
-                        Text(
-                            "Login",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                "Login",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -272,7 +293,10 @@ fun LoginScreen(
                             fontSize = 13.sp
                         )
 
-                        TextButton(onClick = onRegisterClick) {
+                        TextButton(
+                            onClick = onRegisterClick,
+                            enabled = !isLoading
+                        ) {
                             Text(
                                 "Register",
                                 color = Color(0xFF60A5FA),
@@ -293,7 +317,7 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     CodeTrackTheme {
         LoginScreen(
-            onLogin = {},
+            onLogin = { _, _ -> },
             onRegisterClick = {},
             onForgotPasswordClick = {}
         )
